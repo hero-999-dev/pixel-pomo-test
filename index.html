@@ -10,10 +10,15 @@
   *{box-sizing:border-box}
   body{background:#1e1e2e;color:#cdd6f4;font-family:Consolas,'Courier New',monospace;
        display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:1rem}
-  .box{width:320px;max-width:100%;text-align:center;padding:2rem 2.2rem;border:2px solid #45475a;
+  .box{width:340px;max-width:100%;text-align:center;padding:1.8rem 2rem;border:2px solid #45475a;
        border-radius:10px;background:#181825;box-shadow:0 10px 40px rgba(0,0,0,.55)}
   h1{font-size:1.15rem;margin:0 0 .3rem;letter-spacing:1px}
-  .sub{color:#9399b2;font-size:.8rem;margin:0 0 1.4rem}
+  .sub{color:#9399b2;font-size:.8rem;margin:0 0 1rem}
+  .langbar{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:center;margin-bottom:1.1rem}
+  .lang{background:#11111b;color:#9399b2;border:1px solid #45475a;padding:.28rem .5rem;
+        font:inherit;font-size:.72rem;border-radius:5px;cursor:pointer}
+  .lang:hover{border-color:#7f849c;color:#cdd6f4}
+  .lang.on{border-color:#89b4fa;background:#1a2033;color:#89b4fa}
   .modes{display:flex;gap:.6rem;margin-bottom:1.1rem}
   .mode{flex:1;background:#11111b;color:#cdd6f4;border:2px solid #45475a;padding:.7rem .3rem;
         font:inherit;border-radius:6px;cursor:pointer;transition:.12s}
@@ -35,54 +40,82 @@
 <body>
 <div class="box">
   <h1>🍅 PIXEL POMO</h1>
-  <p class="sub">Bir mod seç ve şifreni gir</p>
+  <p class="sub" id="sub"></p>
+  <div class="langbar" id="langbar"></div>
   <div class="modes">
-    <button class="mode" data-mode="user" id="mUser">KULLANICI<small>temiz başlangıç</small></button>
-    <button class="mode" data-mode="test" id="mTest">TEST<small>demo verili</small></button>
+    <button class="mode" data-mode="user" id="mUser"><span id="uLabel"></span><small id="uSub"></small></button>
+    <button class="mode" data-mode="test" id="mTest">TEST<small id="tSub"></small></button>
   </div>
-  <input id="pw" type="password" placeholder="Şifre" autocomplete="off" disabled>
-  <button id="go" disabled>GİR</button>
+  <input id="pw" type="password" autocomplete="off" disabled>
+  <button id="go" disabled></button>
   <div id="msg"></div>
-  <p class="hint">Girdikten sonra açılan sayfayı yer imine eklersen şifreyi bir daha sormaz.</p>
+  <p class="hint" id="hint"></p>
 </div>
 <script>
-// The mode AND the password go into the hash together: the app for each mode
-// lives at p-<sha256("<mode>:<password>")[:20]>/. Neither a password nor a
-// folder name appears anywhere in this page — a wrong mode+password pair
-// hashes to a folder that does not exist and the server answers 404.
+// The same app runs in six languages; the picked one localises this page and
+// is handed to the app as ?lang=xx. The password gate is unchanged: the app
+// for a mode lives at p-<sha256("<mode>:<password>")[:20]>/, derived at submit
+// time, so no password and no folder name is in this page's source.
+const L = {
+  en:{name:'English', sub:'Pick a mode and enter your password', user:'USER', uSub:'clean start', tSub:'demo data', pw:'Password', go:'ENTER', hint:'After you enter, bookmark the page that opens and it will not ask again.', mPick:'Pick a mode first.', mEmpty:'Password is empty.', mCheck:'Checking…', mWrong:'Wrong password for this mode.'},
+  tr:{name:'Türkçe', sub:'Bir mod seç ve şifreni gir', user:'KULLANICI', uSub:'temiz başlangıç', tSub:'demo verili', pw:'Şifre', go:'GİR', hint:'Girdikten sonra açılan sayfayı yer imine eklersen bir daha sormaz.', mPick:'Önce bir mod seç.', mEmpty:'Şifre boş.', mCheck:'Kontrol ediliyor…', mWrong:'Bu mod için şifre yanlış.'},
+  pl:{name:'Polski', sub:'Wybierz tryb i wpisz hasło', user:'UŻYTKOWNIK', uSub:'czysty start', tSub:'dane demo', pw:'Hasło', go:'WEJDŹ', hint:'Po wejściu dodaj otwartą stronę do zakładek, a hasło nie będzie już potrzebne.', mPick:'Najpierw wybierz tryb.', mEmpty:'Hasło jest puste.', mCheck:'Sprawdzanie…', mWrong:'Błędne hasło dla tego trybu.'},
+  de:{name:'Deutsch', sub:'Modus wählen und Passwort eingeben', user:'BENUTZER', uSub:'sauberer Start', tSub:'Demo-Daten', pw:'Passwort', go:'LOS', hint:'Nach dem Öffnen die Seite als Lesezeichen speichern, dann fragt sie nicht erneut.', mPick:'Zuerst einen Modus wählen.', mEmpty:'Passwort ist leer.', mCheck:'Wird geprüft…', mWrong:'Falsches Passwort für diesen Modus.'},
+  fr:{name:'Français', sub:'Choisis un mode et saisis ton mot de passe', user:'UTILISATEUR', uSub:'départ propre', tSub:'données démo', pw:'Mot de passe', go:'ENTRER', hint:'Après être entré, ajoute la page ouverte aux favoris et elle ne redemandera plus.', mPick:'Choisis d’abord un mode.', mEmpty:'Le mot de passe est vide.', mCheck:'Vérification…', mWrong:'Mauvais mot de passe pour ce mode.'},
+  it:{name:'Italiano', sub:'Scegli una modalità e inserisci la password', user:'UTENTE', uSub:'avvio pulito', tSub:'dati demo', pw:'Password', go:'ENTRA', hint:'Dopo l’accesso aggiungi la pagina ai preferiti e non chiederà più.', mPick:'Prima scegli una modalità.', mEmpty:'La password è vuota.', mCheck:'Controllo…', mWrong:'Password errata per questa modalità.'}
+};
+const ORDER = ['en','tr','pl','de','fr','it'];
+let lang = (() => { const b = (navigator.language || 'tr').slice(0, 2); return ORDER.includes(b) ? b : 'tr'; })();
 let mode = null;
-const pw = document.getElementById('pw');
-const go = document.getElementById('go');
-const msg = document.getElementById('msg');
 
+const $ = id => document.getElementById(id);
+function paint(){
+  const s = L[lang];
+  document.documentElement.lang = lang;
+  $('sub').textContent = s.sub;
+  $('uLabel').textContent = s.user;
+  $('uSub').textContent = s.uSub;
+  $('tSub').textContent = s.tSub;
+  $('pw').placeholder = s.pw;
+  $('go').textContent = s.go;
+  $('hint').textContent = s.hint;
+  for (const b of document.querySelectorAll('.lang')) b.classList.toggle('on', b.dataset.l === lang);
+}
+// language bar
+for (const code of ORDER){
+  const b = document.createElement('button');
+  b.className = 'lang'; b.dataset.l = code; b.textContent = L[code].name;
+  b.addEventListener('click', () => { lang = code; paint(); if (mode) $('pw').focus(); });
+  $('langbar').appendChild(b);
+}
 function pick(m, btn){
   mode = m;
   for (const b of document.querySelectorAll('.mode')) b.classList.remove('on');
   btn.classList.add('on');
-  pw.disabled = false; go.disabled = false; msg.textContent = '';
-  pw.focus();
+  $('pw').disabled = false; $('go').disabled = false; $('msg').textContent = '';
+  $('pw').focus();
 }
-document.getElementById('mUser').addEventListener('click', e => pick('user', e.currentTarget));
-document.getElementById('mTest').addEventListener('click', e => pick('test', e.currentTarget));
+$('mUser').addEventListener('click', e => pick('user', e.currentTarget));
+$('mTest').addEventListener('click', e => pick('test', e.currentTarget));
 
 async function enter(){
-  if (!mode){ msg.textContent = 'Önce bir mod seç.'; return; }
-  const pass = pw.value.trim();
-  if (!pass){ msg.textContent = 'Şifre boş.'; return; }
-  go.disabled = true; msg.style.color = '#9399b2'; msg.textContent = 'Kontrol ediliyor…';
+  const s = L[lang], msg = $('msg');
+  if (!mode){ msg.style.color = '#f38ba8'; msg.textContent = s.mPick; return; }
+  const pass = $('pw').value.trim();
+  if (!pass){ msg.style.color = '#f38ba8'; msg.textContent = s.mEmpty; return; }
+  $('go').disabled = true; msg.style.color = '#9399b2'; msg.textContent = s.mCheck;
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(mode + ':' + pass));
   const hex = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
   const dir = 'p-' + hex.slice(0, 20) + '/';
   try {
     const r = await fetch(dir + 'index.html', {method: 'HEAD', cache: 'no-store'});
-    if (r.ok){ location.href = dir; return; }
+    if (r.ok){ location.href = dir + '?lang=' + lang; return; }
   } catch (e) {}
-  msg.style.color = '#f38ba8';
-  msg.textContent = 'Şifre bu mod için yanlış.';
-  go.disabled = false;
+  msg.style.color = '#f38ba8'; msg.textContent = s.mWrong; $('go').disabled = false;
 }
-go.addEventListener('click', enter);
-pw.addEventListener('keydown', e => { if (e.key === 'Enter') enter(); });
+$('go').addEventListener('click', enter);
+$('pw').addEventListener('keydown', e => { if (e.key === 'Enter') enter(); });
+paint();
 </script>
 </body>
 </html>
