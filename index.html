@@ -4,49 +4,85 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Pixel Pomo — Test</title>
+<title>Pixel Pomo</title>
 <style>
+  :root{color-scheme:dark}
+  *{box-sizing:border-box}
   body{background:#1e1e2e;color:#cdd6f4;font-family:Consolas,'Courier New',monospace;
-       display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
-  .box{text-align:center;padding:2rem 2.4rem;border:2px solid #45475a;border-radius:8px;
-       background:#181825;box-shadow:0 8px 30px rgba(0,0,0,.5)}
-  h1{font-size:1.15rem;margin:0 0 1.2rem;letter-spacing:1px}
-  input{background:#11111b;color:#cdd6f4;border:2px solid #45475a;padding:.6rem;
-        font:inherit;border-radius:4px;text-align:center;width:100%;box-sizing:border-box}
+       display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:1rem}
+  .box{width:320px;max-width:100%;text-align:center;padding:2rem 2.2rem;border:2px solid #45475a;
+       border-radius:10px;background:#181825;box-shadow:0 10px 40px rgba(0,0,0,.55)}
+  h1{font-size:1.15rem;margin:0 0 .3rem;letter-spacing:1px}
+  .sub{color:#9399b2;font-size:.8rem;margin:0 0 1.4rem}
+  .modes{display:flex;gap:.6rem;margin-bottom:1.1rem}
+  .mode{flex:1;background:#11111b;color:#cdd6f4;border:2px solid #45475a;padding:.7rem .3rem;
+        font:inherit;border-radius:6px;cursor:pointer;transition:.12s}
+  .mode:hover{border-color:#7f849c}
+  .mode.on{border-color:#a6e3a1;background:#1b2a1b;color:#a6e3a1;font-weight:bold}
+  .mode small{display:block;color:#6c7086;font-size:.65rem;margin-top:.25rem;font-weight:normal}
+  .mode.on small{color:#94b894}
+  input{width:100%;background:#11111b;color:#cdd6f4;border:2px solid #45475a;padding:.65rem;
+        font:inherit;border-radius:6px;text-align:center}
   input:focus{outline:none;border-color:#a6e3a1}
-  button{margin-top:.9rem;background:#a6e3a1;color:#11111b;border:0;padding:.6rem 1.4rem;
-         font:inherit;font-weight:bold;border-radius:4px;cursor:pointer;width:100%}
-  button:hover{background:#94d68a}
-  #msg{color:#f38ba8;min-height:1.2rem;margin-top:.8rem;font-size:.85rem}
+  #go{margin-top:.8rem;width:100%;background:#a6e3a1;color:#11111b;border:0;padding:.7rem;
+      font:inherit;font-weight:bold;border-radius:6px;cursor:pointer}
+  #go:hover{background:#94d68a}
+  #go:disabled{background:#45475a;color:#7f849c;cursor:not-allowed}
+  #msg{min-height:1.1rem;margin-top:.8rem;font-size:.82rem;color:#f38ba8}
+  .hint{color:#6c7086;font-size:.7rem;margin-top:1rem;line-height:1.4}
 </style>
 </head>
 <body>
 <div class="box">
-  <h1>🍅 PIXEL POMO — TEST</h1>
-  <input id="pw" type="password" placeholder="Şifre gir" autofocus autocomplete="off">
-  <button id="go">GİR</button>
+  <h1>🍅 PIXEL POMO</h1>
+  <p class="sub">Bir mod seç ve şifreni gir</p>
+  <div class="modes">
+    <button class="mode" data-mode="user" id="mUser">KULLANICI<small>temiz başlangıç</small></button>
+    <button class="mode" data-mode="test" id="mTest">TEST<small>demo verili</small></button>
+  </div>
+  <input id="pw" type="password" placeholder="Şifre" autocomplete="off" disabled>
+  <button id="go" disabled>GİR</button>
   <div id="msg"></div>
+  <p class="hint">Girdikten sonra açılan sayfayı yer imine eklersen şifreyi bir daha sormaz.</p>
 </div>
 <script>
-// No password and no comparison value live in this page. The password itself
-// derives the app's folder name via one-way SHA-256; a wrong guess derives a
-// folder that does not exist, and the server answers 404.
-async function go(){
-  const pw = document.getElementById('pw').value.trim();
-  const msg = document.getElementById('msg');
-  if(!pw){ msg.textContent = 'Şifre boş.'; return; }
-  msg.textContent = 'Kontrol ediliyor…';
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+// The mode AND the password go into the hash together: the app for each mode
+// lives at p-<sha256("<mode>:<password>")[:20]>/. Neither a password nor a
+// folder name appears anywhere in this page — a wrong mode+password pair
+// hashes to a folder that does not exist and the server answers 404.
+let mode = null;
+const pw = document.getElementById('pw');
+const go = document.getElementById('go');
+const msg = document.getElementById('msg');
+
+function pick(m, btn){
+  mode = m;
+  for (const b of document.querySelectorAll('.mode')) b.classList.remove('on');
+  btn.classList.add('on');
+  pw.disabled = false; go.disabled = false; msg.textContent = '';
+  pw.focus();
+}
+document.getElementById('mUser').addEventListener('click', e => pick('user', e.currentTarget));
+document.getElementById('mTest').addEventListener('click', e => pick('test', e.currentTarget));
+
+async function enter(){
+  if (!mode){ msg.textContent = 'Önce bir mod seç.'; return; }
+  const pass = pw.value.trim();
+  if (!pass){ msg.textContent = 'Şifre boş.'; return; }
+  go.disabled = true; msg.style.color = '#9399b2'; msg.textContent = 'Kontrol ediliyor…';
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(mode + ':' + pass));
   const hex = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
   const dir = 'p-' + hex.slice(0, 20) + '/';
   try {
     const r = await fetch(dir + 'index.html', {method: 'HEAD', cache: 'no-store'});
-    if (r.ok) { location.href = dir; return; }
+    if (r.ok){ location.href = dir; return; }
   } catch (e) {}
-  msg.textContent = 'Şifre yanlış.';
+  msg.style.color = '#f38ba8';
+  msg.textContent = 'Şifre bu mod için yanlış.';
+  go.disabled = false;
 }
-document.getElementById('go').addEventListener('click', go);
-document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+go.addEventListener('click', enter);
+pw.addEventListener('keydown', e => { if (e.key === 'Enter') enter(); });
 </script>
 </body>
 </html>
