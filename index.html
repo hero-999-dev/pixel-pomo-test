@@ -1,46 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="/pixel-pomo-test/">
-
-  <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
-
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="pixel_pomo">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>pixel_pomo</title>
-  <link rel="manifest" href="manifest.json">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Pixel Pomo — Test</title>
+<style>
+  body{background:#1e1e2e;color:#cdd6f4;font-family:Consolas,'Courier New',monospace;
+       display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+  .box{text-align:center;padding:2rem 2.4rem;border:2px solid #45475a;border-radius:8px;
+       background:#181825;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  h1{font-size:1.15rem;margin:0 0 1.2rem;letter-spacing:1px}
+  input{background:#11111b;color:#cdd6f4;border:2px solid #45475a;padding:.6rem;
+        font:inherit;border-radius:4px;text-align:center;width:100%;box-sizing:border-box}
+  input:focus{outline:none;border-color:#a6e3a1}
+  button{margin-top:.9rem;background:#a6e3a1;color:#11111b;border:0;padding:.6rem 1.4rem;
+         font:inherit;font-weight:bold;border-radius:4px;cursor:pointer;width:100%}
+  button:hover{background:#94d68a}
+  #msg{color:#f38ba8;min-height:1.2rem;margin-top:.8rem;font-size:.85rem}
+</style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
-  <script src="flutter_bootstrap.js" async></script>
+<div class="box">
+  <h1>🍅 PIXEL POMO — TEST</h1>
+  <input id="pw" type="password" placeholder="Şifre gir" autofocus autocomplete="off">
+  <button id="go">GİR</button>
+  <div id="msg"></div>
+</div>
+<script>
+// No password and no comparison value live in this page. The password itself
+// derives the app's folder name via one-way SHA-256; a wrong guess derives a
+// folder that does not exist, and the server answers 404.
+async function go(){
+  const pw = document.getElementById('pw').value.trim();
+  const msg = document.getElementById('msg');
+  if(!pw){ msg.textContent = 'Şifre boş.'; return; }
+  msg.textContent = 'Kontrol ediliyor…';
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  const hex = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  const dir = 'p-' + hex.slice(0, 20) + '/';
+  try {
+    const r = await fetch(dir + 'index.html', {method: 'HEAD', cache: 'no-store'});
+    if (r.ok) { location.href = dir; return; }
+  } catch (e) {}
+  msg.textContent = 'Şifre yanlış.';
+}
+document.getElementById('go').addEventListener('click', go);
+document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+</script>
 </body>
 </html>
