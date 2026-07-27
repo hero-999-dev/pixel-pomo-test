@@ -26828,24 +26828,31 @@ return q},
 aNZ(a,b){var s=a*73856093^b*19349663
 return(s^s>>>13)&2147483647},
 aNX(a,b){return B.e.eC(a>=0?a:a-b+1,b)},
-b3m(a,b,c,d){var s,r,q,p,o,n,m,l
-if(a<0)s=-a
+b3m(a,b,c,d){var s,r,q,p,o,n,m,l,k,j,i,h=a<0
+if(h)s=-a
 else{r=c-1
-s=a>r?a-r:0}if(b<0)q=-b
-else{r=d-1
-q=b>r?b-r:0}p=s>q?s:q
-if(p===0)return null
-o=A.aNZ(a,b)
-n=B.e.aC(o,100)
-m=o/100|0
-r=new A.aCZ(m)
-if(p>=4){l=A.b0z(a,b,p>=6?4:3)
-if(l!=null)return l}if(n<34)return null
-if(p<=2){if(n<78&&p>=2)return A.aOr(m)
-if(n<90)return r.$2("bush",10)
-return r.$2("rock",5)}if(n<84)return A.aOr(m)
-if(n<94)return r.$2("bush",10)
-return r.$2("rock",5)},
+s=a>r?a-r:0}r=b<0
+if(r)q=-b
+else{p=d-1
+q=b>p?b-p:0}o=s>q?s:q
+if(o===0)return null
+n=A.aNZ(a,b)
+m=B.e.aC(n,100)
+l=n/100|0
+p=new A.aCZ(l)
+if(o>=4){k=A.b0z(a,b,o>=6?4:3)
+if(k!=null)return k}if(m<34)return null
+if(o<=2){j=o>=2
+if(!j){if(h)s=-a
+else{h=c-1
+s=a>h?a-h:0}if(r)q=-b
+else{h=d-1
+q=b>h?b-h:0}i=s>0&&q===0}else i=!0
+if(m<(j?78:66)&&i)return A.aOr(l)
+if(m<90)return p.$2("bush",10)
+return p.$2("rock",5)}if(m<84)return A.aOr(l)
+if(m<94)return p.$2("bush",10)
+return p.$2("rock",5)},
 b0z(a,b,c){var s,r,q=A.aNX(a,7),p=A.aNX(b,7),o=A.aNZ(q*2+1,p*2+1)
 if(B.e.aC(o,100)>=60)return null
 s=B.e.aC(o/100|0,4)
