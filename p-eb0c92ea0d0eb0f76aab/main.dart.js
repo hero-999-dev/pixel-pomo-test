@@ -26859,7 +26859,8 @@ aOd(a,b,c,d){var s=B.e.aA(A.a_Y(a,b),100),r=new A.aC9(a,b)
 if(s<20)return null
 if(A.aPl(a,b,c,d)){if(s<52)return"tree_"+B.c.cZ(B.e.k(B.IQ[A.aCH(a,b,2)]),2,"0")
 if(s<88)return r.$2("bush",10)
-return r.$2("rock",5)}return r.$2("bush",10)},
+return r.$2("rock",5)}if(s<76)return r.$2("bush",10)
+return r.$2("rock",5)},
 b1F(a,b,c,d){var s,r,q,p=A.a_Y(a,b)/100|0,o=A.aOd(a,b,c,d)
 if(o==null){s=A.b2g(a,b,c,d)
 if(A.aP7(s.a,s.b,c,d)==null)return"bush_"+B.c.cZ(B.e.k(B.e.aA(p,10)),2,"0")
